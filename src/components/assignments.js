@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Button, Modal, Form, Input, DatePicker, Upload, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import Sidebar from './Sidebar';
@@ -14,38 +14,39 @@ const Assignments = () => {
   const token = localStorage.getItem('authToken');
   const userRole = localStorage.getItem('role') || 'student';
 
-  useEffect(() => {
-    fetchAssignments();
-  }, []);
-
-  // Fetch assignments
-  const fetchAssignments = async () => {
+  // Fetch assignments using useCallback to avoid redefining the function
+  const fetchAssignments = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axios.get('http://localhost:3001/api/attendence', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setAssignments(response.data.assignments);
+      setAssignments(response.data.assignments || []);
     } catch (error) {
       message.error('Failed to fetch assignments.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  // Handle create assignment modal
+  // useEffect to call fetchAssignments
+  useEffect(() => {
+    fetchAssignments();
+  }, [fetchAssignments]);
+
+  // Open the create assignment modal
   const handleCreateAssignment = () => {
     setIsCreateModalOpen(true);
     form.resetFields();
   };
 
-  // Handle submit assignment modal
+  // Open the submit assignment modal
   const handleSubmitAssignment = (assignmentId) => {
     setIsSubmitModalOpen(true);
     form.setFieldsValue({ assignmentId });
   };
 
-  // Handle create assignment API call
+  // Create assignment API call
   const handleAddAssignment = async (values) => {
     try {
       const { teacherName, teacherEmail, title, description, dueDate } = values;
@@ -68,7 +69,7 @@ const Assignments = () => {
     }
   };
 
-  // Handle assignment submission (with file upload)
+  // Submit assignment with file upload
   const handleUploadAssignment = async (values) => {
     try {
       const formData = new FormData();
@@ -94,7 +95,7 @@ const Assignments = () => {
     }
   };
 
-  // Columns for the assignments table
+  // Table columns
   const columns = [
     { title: 'Teacher', dataIndex: 'teacherName', key: 'teacherName' },
     { title: 'Title', dataIndex: 'title', key: 'title' },
